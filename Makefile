@@ -7,4 +7,4 @@ LIB=$(HOME)/bin
 
 cadd:
 	$(CC) $(CFLAGS) $(CDIR)/add.c -o $(LIB)/add.o $(CINCL)
-	ln -s $(LIB)/add.o $(QHOME)/l32/add.so
+	ln -sf $(LIB)/add.o $(QHOME)/l32/add.so
