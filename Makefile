@@ -12,7 +12,7 @@ ifeq ($(OS),Darwin)
 	KDB_ARCH=m32
 endif
 
-kdb:	cadd updateqq
+kdb:	cadd updateqq test
 
 cadd:
 	$(CC) $(CFLAGS) $(CDIR)/add.c -o $(LIB)/add.so $(CINCL)
@@ -25,3 +25,5 @@ updateqq:
 	@echo "\n\033[1;32m--- Installing the following functions to kdb ---\033[1;33m"
 	@cat $(QHOME)/c.q|sort|uniq|tee $(QHOME)/c.q
 
+test:
+	@$(QHOME)/$(KDB_ARCH)/q unit/test.q -q
