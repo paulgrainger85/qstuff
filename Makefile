@@ -16,11 +16,12 @@ kdb:	cadd updateqq
 
 cadd:
 	$(CC) $(CFLAGS) $(CDIR)/add.c -o $(LIB)/add.so $(CINCL)
-	@echo "\n--- Linking following libraries ---"
+	@echo "\n\033[1;32m--- Linking following libraries ---\033[1;34m"
 	ln -sf $(LIB)/add.so $(QHOME)/$(KDB_ARCH)/add.so
 
 updateqq:
 	@echo ".c.add:\`add 2:(\`add;2)" >> $(QHOME)/c.q
 	@echo ".c.test:\`add 2:(\`test;1)" >> $(QHOME)/c.q
-	@echo "\n--- Installing the following functions to kdb ---"
+	@echo "\n\033[1;32m--- Installing the following functions to kdb ---\033[1;33m"
 	@cat $(QHOME)/c.q|sort|uniq|tee $(QHOME)/c.q
+
