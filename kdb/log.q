@@ -37,4 +37,4 @@
   .log.priv.COLORS_ACTIVE:$[onOff=`on;1b;0b]
  }
 
-.log.level:{[l]}
+.log.level:{[l] if[l in .log.priv.LEVELS;.log.priv.L:l]}
