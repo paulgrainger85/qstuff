@@ -1,8 +1,14 @@
 //keep track of performance of functions
+//provide command line arguments to determine whether or not to utilize it
+
+//command line
+.bmrk.priv.ARGS:.Q.opt[.z.x]
+//Backup dictionary to keep track of previous versions of functions
 .bmrk.priv.backup:()!()
+.bmrk.funcs:([]time:`timestamp$();user:`$();func:`$();args:();runtime:`timespan$();result:();err:())
 
 .bmrk.revert:{[f] f set .bmrk.priv.backup f}
-.bmrk.funcs:([]time:`timestamp$();user:`$();func:`$();args:();runtime:`timespan$();result:();err:())
+.bmrk.reset:{.bmrk.revert each key .bmrk.priv.backup}
 
 .bmrk.profile:{[f;vf;args]
   t:.z.p;
