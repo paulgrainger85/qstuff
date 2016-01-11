@@ -2,6 +2,8 @@
 // * sysmon.q - a kdb system monitor *
 // ***********************************
 // Monitors all processes running on local host and keeps track of their current usage
+// Links with bmark.q script to utilizing error tracking table
+//
 // **********************************************
 // REQUIRED ARGS
 //   -config CONFIG_FILE
@@ -11,6 +13,7 @@
 // **********************************************
 // DEPENDENCIES
 //   timer.q
+//
 // TODO(s):
 // - Allow process to monitor remote hosts
 // - Connect to processes which are open on a port
@@ -76,6 +79,13 @@ if[not all `config in key .sysm.priv.ARGS;
    } .' flip value exec handle,name from sysmon where not null handle;
  }
 
+//Function status from bmark.q
+.sysm.checkForErrors:{
+  {[h;name]
+    neg[h]({neg[.z.w](`.sysm.errorCallback;$[@[get;`.bmrk.priv.ACTIVE;0b];.bmrk.getErrorDelta[];()];x)};name)
+  } .' flip value exec handle,name from sysmon where not null handle;
+ }
+
 // *** Callbacks ***
 .sysm.initCallback:{[x;u;pid;cmd]
   `sysmon upsert `name`user`pid`cmd!(x;u;pid;cmd)
@@ -83,6 +93,12 @@ if[not all `config in key .sysm.priv.ARGS;
 
 .sysm.memCallback:{[id;m]
   `sysmonHist upsert `name`time`mem!(id;.z.P;m)
+ }
+
+.sysm.errorCallback:{[err;id]
+  if[not count err;:()];
+  .log.warn string[count err]," new error(s) detected in process ",string id;
+  `alerts upsert update name:id from err
  }
 
 // ** .z handlers **
@@ -96,7 +112,8 @@ if[not all `config in key .sysm.priv.ARGS;
 
 .z.pc:{.sysm.z.pc[x]}
 //set up timers
-.timer.addTimer[`memMonitor;(`.sysm.monitorMem;::);60000]
-.timer.addTimer[`reconnect;(`.sysm.reconnect;::);60000]
+.timer.addTimer[`memMonitor;(`.sysm.monitorMem;::);5000]
+.timer.addTimer[`reconnect;(`.sysm.reconnect;::);5000]
+.timer.addTimer[`errors;(`.sysm.checkForErrors;::);5000]
 
 .sysm.init[]

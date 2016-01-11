@@ -7,6 +7,7 @@
 .bmrk.priv.backup:()!()
 .bmrk.priv.ACTIVE:1b
 .bmrk.profileHist:([]time:`timestamp$();user:`$();func:`$();args:();runtime:`timespan$();result:();err:())
+.bmrk.priv.recentErr:.bmrk.profileHist
 
 .bmrk.revert:{[f] f set .bmrk.priv.backup f}
 .bmrk.reset:{.bmrk.revert each key .bmrk.priv.backup}
@@ -14,11 +15,12 @@
 .bmrk.profile:{[f;vf;args]
   t:.z.p;
   //if there is a single argument, or the arg is a string, we need to enlist
-  //args:$[(1=count args) or 10h=type args;enlist args;args];
-  r:@[value;vf,enlist args;{(0b;x)}];
+  r:@[value;vf,$[(1=count args) or (10h=type args) or f in `.z.pg`.z.ps;enlist args;args];{(0b;x)}];
   argf:(value get f)[1];
-  `.bmrk.profileHist upsert(.z.P;.z.u;f;argf!(count argf)#$[(1=count args)|10h=type args;enlist args;args];`timespan$.z.p-t;$[0b~first r;0b;1b];$[0b~first r;last r;(::)]);
-  $[0b~first r;last r;r]
+  `.bmrk.profileHist upsert delta:(.z.P;.z.u;f;argf!(count argf)#$[(1=count args)|10h=type args;enlist args;args];`timespan$.z.p-t;$[0b~first r;0b;1b];$[0b~first r;last r;(::)]);
+  $[0b~first r;
+    [`.bmrk.priv.recentErr upsert delta;last r];
+    r]
  }
 
 .bmrk.autoProfile:{[f]
@@ -26,6 +28,12 @@
   vf:value get f;
   args:";" sv string vf[1];
   f set value "{[",args,"] .bmrk.profile[`",string[f],";",last[vf],";(",args,")]}";
+ }
+
+.bmrk.getErrorDelta:{
+  r:select time,alertType:`funcError,misc:{`func`args!(x;y)}'[func;args]from .bmrk.priv.recentErr;
+  delete from `.bmrk.priv.recentErr;
+  r
  }
 
 //Incoming IPC profiling
