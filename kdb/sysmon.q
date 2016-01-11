@@ -2,70 +2,101 @@
 // * sysmon.q - a kdb system monitor *
 // ***********************************
 // Monitors all processes running on local host and keeps track of their current usage
-//
+// **********************************************
 // REQUIRED ARGS
-// -------------
-// OPTIONAL ARGS
-// -------------
-// -proc PROCESS_STRING
-// -log REPLAY_LOG 
+//   -config CONFIG_FILE
 //
+// OPTIONAL ARGS
+//   -freq UPDATE_FREQ
+// **********************************************
+// DEPENDENCIES
+//   timer.q
 // TODO(s):
 // - Allow process to monitor remote hosts
-// - OOM style killer
 // - Connect to processes which are open on a port
 // - library for kdb processes to run santiy checks on data
 // - Some sort of notifications if certain conditions met (process dead, high memory/cpu, OOM about to go on killing spree)
 // - Log file to enable replay in case of crash
-// - Some simple html5 client which can display the data? 
+// - Some simple html5 client which can display the data?
 // - Run lsof in background (maybe spawn C lib which periodically returns data to kdb)
 // ************************************************
 
 // ** Schemas **
-tracking:([pid:`long$()]user:`$();cmd:();port:`long$();handle:`int$());
-trackingHist:([]pid:`tracking$`long$();time:`timestamp$();mem:`float$();cpu:`float$())
+sysmon:([name:`$()]user:`$();pid:`int$();cmd:();host:`$();port:`int$();handle:`int$());
+sysmonHist:([]name:`sysmon$`$();time:`timestamp$();mem:`long$())
+alerts:([]name:`sysmon$`$();time:`timestamp$();alertType:`$();misc:())
 
-args:.Q.opt[.z.x]
+// ** Globals **
+.sysm.priv.ARGS:.Q.opt[.z.x]
+if[not all `config in key .sysm.priv.ARGS;
+  .log.err "Missing required arguments: -config";
+  exit 1]
 
-SEARCH_STRING:$[not`proc in key args;"$QHOME";first args`proc]
+.sysm.priv.CONFIG:("S**";enlist",")0:first hsym`$.sysm.priv.ARGS[`config];
+.sysm.priv.FREQ:$[`freq in key .sysm.priv.ARGS;first "J"$.sysm.priv.ARGS`freq;60000] //frequency of monitor
 
-//sysmon.q - a generic system monitor
-//things to monitor
-//kdb processes - total mem usage, cpu, up time, if process is alive
 
-//table keeping track of all processes
-//pid - the process ID
-//cmd - the command running the process
-//mem - current RAM usage
-//cpu - current CPU usage
-//port - if the process is open on a port insert this
-
-//TODO: Consider adding the following stats
-// open file handles
-// host
-// if able to connect to port:
-// -- monitor output of .z.W
-// -- time taken for a response 
-
-//Get all active processes
-getProcs:{
-  p:@[system;"ps aux|grep \"[0-9] ",SEARCH_STRING,"\"";()];
-  if[p~();:()];
-  p:{{ssr[x;"  ";" "]}/[x]}each p; 
-  t:flip`user`pid`cpu`mem`cmd!flip "SJFF*"$/:{x[;0 1 3 5],'enlist each " " sv'10_'x}" " vs' p;
-  update port:@[{first "J"$system"lsof -p ",string[x]," -P|grep -o TCP.*LISTEN|grep -o [0-9].*[0-9]"};;0N]each pid from t
+// ** Functions **
+.sysm.init:{
+  //read from config file
+  procs:.sysm.priv.CONFIG[`name]!hsym`$":" sv'flip .sysm.priv.CONFIG`host`port;
+  `sysmon upsert select name,`$host,"I"$port from .sysm.priv.CONFIG;
+  //open a connection to each process in the config file
+  update handle:@[hopen;;0Ni]each procs[name]from `sysmon;
+  .sysm.getProcMeta each exec name from sysmon;
  }
 
-connect:{[x] @[hopen;;0Ni]each`$"::",string x}
-
-//.z handlers 
-.z.ts:{
-  p:update time:.z.P from getProcs[];
-  `tracking upsert select pid,user,cmd,port from p;
-  `trackingHist upsert select pid,time,mem,cpu from p;
+//Called on initiaization to populate sysmon table
+.sysm.getProcMeta:{[id]
+  h:neg first exec handle from sysmon where name=id;
+  if[not null h;
+    h({neg[.z.w](`.sysm.initCallback;x;.z.u;.z.i;" " sv .z.X)};id);
+  ]
  }
 
-//close handle
-.z.pc:{}
+.sysm.reconnect:{
+  if[count c:select from sysmon where null handle;
+    update handle:@[hopen;;0Ni]each{hsym`$x,":",y}'[string host;string port]from `sysmon where handle in exec handle from c;
+    if[count active:select from c where name in exec name from sysmon where not null handle;
+      .sysm.getProcMeta each exec name from active;
+      .sysm.printInfo active;
+     ]
+  ]
+ }
 
+.sysm.printInfo:{[t]
+  .log.info "Connected to the following processes:\n",.Q.s t;
+ }
 
+// ** Monitoring functions **
+//Memory
+.sysm.monitorMem:{
+  {[h;name]
+    neg[h]({neg[.z.w](`.sysm.memCallback;x;.Q.w[]`used)};name)
+   } .' flip value exec handle,name from sysmon where not null handle;
+ }
+
+// *** Callbacks ***
+.sysm.initCallback:{[x;u;pid;cmd]
+  `sysmon upsert `name`user`pid`cmd!(x;u;pid;cmd)
+ }
+
+.sysm.memCallback:{[id;m]
+  `sysmonHist upsert `name`time`mem!(id;.z.P;m)
+ }
+
+// ** .z handlers **
+//close handler
+.sysm.z.pc:{
+  n:first exec name from sysmon where handle=x;
+  .log.warn "Process ",string[n]," has closed";
+  update handle:0Ni from `sysmon where handle=x;
+  `alerts upsert(n;.z.P;`close;()!())
+ }
+
+.z.pc:{.sysm.z.pc[x]}
+//set up timers
+.timer.addTimer[`memMonitor;(`.sysm.monitorMem;::);60000]
+.timer.addTimer[`reconnect;(`.sysm.reconnect;::);60000]
+
+.sysm.init[]
