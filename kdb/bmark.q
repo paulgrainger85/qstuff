@@ -1,11 +1,18 @@
 //keep track of performance of functions
 //provide command line arguments to determine whether or not to utilize it
+// TODO:
+// - Remove incoming calls from system monitor from history
+// - Clean up .bmrk.profile function
+// - come up with better names for functions
 
 //command line
 .bmrk.priv.ARGS:.Q.opt[.z.x]
 //Backup dictionary to keep track of previous versions of functions
 .bmrk.priv.backup:()!()
 .bmrk.priv.ACTIVE:1b
+//If the function/argument combo is in this list, then dont track its performance
+.bmrk.priv.IGNORE:();
+
 .bmrk.profileHist:([]time:`timestamp$();user:`$();func:`$();args:();runtime:`timespan$();result:();err:())
 .bmrk.priv.recentErr:.bmrk.profileHist
 

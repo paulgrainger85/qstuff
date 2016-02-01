@@ -26,7 +26,7 @@
 
 // ** Schemas **
 sysmon:([name:`$()]user:`$();pid:`int$();cmd:();host:`$();port:`int$();handle:`int$());
-sysmonHist:([]name:`sysmon$`$();time:`timestamp$();mem:`long$())
+memMonitor:([]name:`sysmon$`$();time:`timestamp$();mem:`long$())
 alerts:([]name:`sysmon$`$();time:`timestamp$();alertType:`$();misc:())
 
 // ** Globals **
@@ -92,7 +92,7 @@ if[not all `config in key .sysm.priv.ARGS;
  }
 
 .sysm.memCallback:{[id;m]
-  `sysmonHist upsert `name`time`mem!(id;.z.P;m)
+  `memMonitor upsert `name`time`mem!(id;.z.P;m)
  }
 
 .sysm.errorCallback:{[err;id]
