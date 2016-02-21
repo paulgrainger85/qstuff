@@ -18,7 +18,9 @@
   (`info;"\033[0;37m"); //white
   (`debug;"\033[0;36m") //blue
  )
-.log.priv.L:`info //default level
+
+//get default logging level. If user passes in -log argument we will use that, otherwise default to info
+.log.priv.L:$[`log in key .log.priv.args:.Q.opt[.z.x];$[(first`$.log.priv.args`log)in .log.priv.LEVELS;first`$.log.priv.args`log;`info];`info]
 .log.priv.COLORS_ACTIVE:1b
 
 //Private log functions
