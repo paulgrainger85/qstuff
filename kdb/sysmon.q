@@ -35,7 +35,7 @@ if[not all `config in key .sysm.priv.ARGS;
   .log.err "Missing required arguments: -config";
   exit 1]
 
-.sysm.priv.CONFIG:("S**";enlist",")0:first hsym`$.sysm.priv.ARGS[`config];
+.sysm.priv.CONFIG:("S**FF";enlist",")0:first hsym`$.sysm.priv.ARGS[`config];
 .sysm.priv.FREQ:$[`freq in key .sysm.priv.ARGS;first "J"$.sysm.priv.ARGS`freq;60000] //frequency of monitor
 
 
@@ -98,6 +98,22 @@ if[not all `config in key .sysm.priv.ARGS;
 
 .sysm.memCallback:{[id;m]
   `memMonitor upsert `name`time`mem`percentOfWmax`percentOfSystem!(id;.z.P;m`used;$[0<>m`wmax;100*(%). m`used`wmax;0n];100*(%). m`used`mphy);
+  .sysm.checkMemThresholds[id]
+ }
+
+//if thresholds are defined within the config, then run check to ensure that we are not breaching them
+//to stop spamming of alerts, only alert if this alert hasnt been sent in the past 10 mins (maybe make this configurable)
+.sysm.checkMemThresholds:{[id]
+  if[(count w:select from .sysm.priv.CONFIG where name=id,not null wmax_t)&0D00:10:00<.z.P-0|max exec time from alerts where name=id,alertType=`wmax_breach;
+    if[count t:select from (-1#select from memMonitor where name=id)where percentOfWmax>first w`wmax_t;
+      .log.warn "Process ",string[id]," has breached WMAX limit ",string[last t`percentOfWmax],"%";
+      `alerts upsert `name`time`alertType`misc!(id;.z.P;`wmax_breach;`mem`percentOfWmax#flip t)];
+   ];
+  if[(count w:select from .sysm.priv.CONFIG where name=id,not null sysmem_t)&0D00:10:00<.z.P-0|max exec time from alerts where name=id,alertType=`sys_mem_breach;
+    if[count t:select from (-1#select from memMonitor where name=id)where percentOfSystem>first w`sysmem_t;
+      .log.warn "Process ",string[id]," has breached system limit ",string[last t`percentOfSystem],"%";
+      `alerts upsert `name`time`alertType`misc!(id;.z.P;`sys_mem_breach;`mem`percentOfSystem#flip t)];
+   ];
  }
 
 .sysm.errorCallback:{[err;id]
