@@ -25,7 +25,7 @@
 // ************************************************
 
 // ** Schemas **
-sysmon:([name:`$()]user:`$();pid:`int$();cmd:();host:`$();port:`int$();handle:`int$());
+sysmon:([name:`$()]user:`$();pid:`int$();cmd:();host:`$();port:`int$();handle:`int$();active:`boolean$());
 memMonitor:([]name:`sysmon$`$();time:`timestamp$();mem:`long$();percentOfWmax:`float$();percentOfSystem:`float$())
 alerts:([]name:`sysmon$`$();time:`timestamp$();alertType:`$();misc:())
 
@@ -45,7 +45,7 @@ if[not all `config in key .sysm.priv.ARGS;
   procs:.sysm.priv.CONFIG[`name]!hsym`$":" sv'flip .sysm.priv.CONFIG`host`port;
   `sysmon upsert select name,`$host,"I"$port from .sysm.priv.CONFIG;
   //open a connection to each process in the config file
-  update handle:@[hopen;;0Ni]each procs[name]from `sysmon;
+  update handle:@[hopen;;0Ni]each procs[name],active:1b from `sysmon;
   .sysm.getProcMeta each exec name from sysmon;
  }
 
@@ -76,15 +76,20 @@ if[not all `config in key .sysm.priv.ARGS;
 .sysm.monitorMem:{
   {[h;name]
     neg[h]({neg[.z.w](`.sysm.memCallback;x;.Q.w[])};name)
-   } .' flip value exec handle,name from sysmon where not null handle;
+   } .' flip value exec handle,name from sysmon where not null handle,active;
  }
 
 //Function status from bmark.q
 .sysm.checkForErrors:{
   {[h;name]
     neg[h]({neg[.z.w](`.sysm.errorCallback;$[@[get;`.bmrk.priv.ACTIVE;0b];.bmrk.getErrorDelta[];()];x)};name)
-  } .' flip value exec handle,name from sysmon where not null handle;
+  } .' flip value exec handle,name from sysmon where not null handle,active;
  }
+
+//supress alerts from a process
+.sysm.sleep:{[id] update active:0b from `sysmon where name=id;.log.info "Supressing alerts from ",string id}
+//re-enable alerts for a process
+.sysm.wakeup:{[id] update active:1b from `sysmon where name=id;.log.info "Enabling alerts from ",string id}
 
 // *** Callbacks ***
 .sysm.initCallback:{[x;u;pid;cmd]
@@ -92,7 +97,7 @@ if[not all `config in key .sysm.priv.ARGS;
  }
 
 .sysm.memCallback:{[id;m]
-  `memMonitor upsert `name`time`mem`percentOfWmax`percentOfSystem!(id;.z.P;m`used;$[0<>m`wmax;100*(%). m`used`wmax;0n];100*(%). m`used`mphy)
+  `memMonitor upsert `name`time`mem`percentOfWmax`percentOfSystem!(id;.z.P;m`used;$[0<>m`wmax;100*(%). m`used`wmax;0n];100*(%). m`used`mphy);
  }
 
 .sysm.errorCallback:{[err;id]
