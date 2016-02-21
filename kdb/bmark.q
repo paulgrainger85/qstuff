@@ -19,22 +19,41 @@
 .bmrk.revert:{[f] f set .bmrk.priv.backup f}
 .bmrk.reset:{.bmrk.revert each key .bmrk.priv.backup}
 
-.bmrk.profile:{[f;vf;args]
+//@param f
+//  @type symbol
+//@param vf
+//  @type lambda
+//@param args
+//  @type multiple
+//@trackArgs
+//  @type boolean
+.bmrk.profile:{[f;vf;args;trackArgs]
   t:.z.p;
   //if there is a single argument, or the arg is a string, we need to enlist
-  r:@[value;vf,$[(1=count args) or (10h=type args) or f in `.z.pg`.z.ps;enlist args;args];{(0b;x)}];
+  r:@[value;vf,$[(1=count args) or (10h=type args) or (f in `.z.pg`.z.ps) or (99h=type args);enlist args;args];{(0b;x)}];
   argf:(value get f)[1];
-  `.bmrk.profileHist upsert delta:(.z.P;.z.u;f;argf!(count argf)#$[(1=count args)|10h=type args;enlist args;args];`timespan$.z.p-t;$[0b~first r;0b;1b];$[0b~first r;last r;(::)]);
+  args:$[trackArgs;
+    argf!(count argf)#$[(1=count args)|any 99 10h=type args;enlist args;args];
+    ()!()];
+  `.bmrk.profileHist upsert delta:(.z.P;.z.u;f;args;`timespan$.z.p-t;$[0b~first r;0b;1b];$[0b~first r;last r;(::)]);
   $[0b~first r;
     [`.bmrk.priv.recentErr upsert delta;last r];
     r]
  }
 
-.bmrk.autoProfile:{[f]
+//Function to set up profiling
+//@param f
+//  @type symbol
+//  @desc the function to profile
+//@param trackArgs
+//  @type boolean
+//  @desc set true to track incoming arguments of f. False stores args as ()!()
+.bmrk.setFuncProfile:{[f;trackArgs]
+  if[not @[{value x;1b};f;{0b}];:.log.warn "Function ",string[f]," does not exist"];
   .bmrk.priv.backup[f]:value f;
   vf:value get f;
   args:";" sv string vf[1];
-  f set value "{[",args,"] .bmrk.profile[`",string[f],";",last[vf],";(",args,")]}";
+  f set value "{[",args,"] .bmrk.profile[`",string[f],";",last[vf],";(",args,");",string[trackArgs],"]}";
  }
 
 .bmrk.getErrorDelta:{
@@ -44,6 +63,6 @@
  }
 
 //Incoming IPC profiling
-.z.pg:{value x};.bmrk.autoProfile`.z.pg
-.z.ps:{value x;};.bmrk.autoProfile`.z.ps
+.z.pg:{value x};.bmrk.setFuncProfile[`.z.pg;1b]
+.z.ps:{value x;};.bmrk.setFuncProfile[`.z.ps;1b]
 
