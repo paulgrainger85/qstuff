@@ -26,7 +26,7 @@
 
 // ** Schemas **
 sysmon:([name:`$()]user:`$();pid:`int$();cmd:();host:`$();port:`int$();handle:`int$());
-memMonitor:([]name:`sysmon$`$();time:`timestamp$();mem:`long$())
+memMonitor:([]name:`sysmon$`$();time:`timestamp$();mem:`long$();percentOfWmax:`float$();percentOfSystem:`float$())
 alerts:([]name:`sysmon$`$();time:`timestamp$();alertType:`$();misc:())
 
 // ** Globals **
@@ -75,7 +75,7 @@ if[not all `config in key .sysm.priv.ARGS;
 //Memory
 .sysm.monitorMem:{
   {[h;name]
-    neg[h]({neg[.z.w](`.sysm.memCallback;x;.Q.w[]`used)};name)
+    neg[h]({neg[.z.w](`.sysm.memCallback;x;.Q.w[])};name)
    } .' flip value exec handle,name from sysmon where not null handle;
  }
 
@@ -92,7 +92,7 @@ if[not all `config in key .sysm.priv.ARGS;
  }
 
 .sysm.memCallback:{[id;m]
-  `memMonitor upsert `name`time`mem!(id;.z.P;m)
+  `memMonitor upsert `name`time`mem`percentOfWmax`percentOfSystem!(id;.z.P;m`used;$[0<>m`wmax;100*(%). m`used`wmax;0n];100*(%). m`used`mphy)
  }
 
 .sysm.errorCallback:{[err;id]
