@@ -131,8 +131,8 @@ if[not all `config in key .sysm.priv.ARGS;
 
 .z.pc:{.sysm.z.pc[x]}
 //set up timers
-.timer.addTimer[`memMonitor;(`.sysm.monitorMem;::);5000]
-.timer.addTimer[`reconnect;(`.sysm.reconnect;::);5000]
-.timer.addTimer[`errors;(`.sysm.checkForErrors;::);5000]
+.timer.addTimer[`memMonitor;(`.sysm.monitorMem;::);.sysm.priv.FREQ]
+.timer.addTimer[`reconnect;(`.sysm.reconnect;::);.sysm.priv.FREQ]
+.timer.addTimer[`errors;(`.sysm.checkForErrors;::);.sysm.priv.FREQ]
 
 .sysm.init[]
