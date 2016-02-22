@@ -3,7 +3,9 @@
 // ***********************************
 // Monitors all processes running on local host and keeps track of their current usage
 // Links with bmark.q script to utilizing error tracking table
-//
+// **********************************************
+// COMMAND LINE
+// q sysmon.q -config config/sysmon.cfg [-freq n]
 // **********************************************
 // REQUIRED ARGS
 //   -config CONFIG_FILE
@@ -15,10 +17,6 @@
 //   timer.q
 //
 // TODO(s):
-// - Allow process to monitor remote hosts
-// - Connect to processes which are open on a port
-// - library for kdb processes to run santiy checks on data
-// - Some sort of notifications if certain conditions met (process dead, high memory/cpu, OOM about to go on killing spree)
 // - Log file to enable replay in case of crash
 // - Some simple html5 client which can display the data?
 // - Run lsof in background (maybe spawn C lib which periodically returns data to kdb)
