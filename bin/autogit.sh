@@ -12,11 +12,13 @@ do
   for i in $REPOS
   do
     echo "checking REPO ${i}"
-    GIT_DIFF=git diff ${i}
-    if [ -z $GIT_DIFF ] 
+    GIT_DIFF=$(git diff ${i})
+    if [ 0 -lt $(echo $GIT_DIFF|wc -w) ] 
     then
       echo "There is a diff!!"
       echo $GIT_DIFF
+      git commit -a -m "auto commit"
+      echo "Complete"
     fi
   done
   sleep $INTERVAL
