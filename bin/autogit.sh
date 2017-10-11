@@ -4,7 +4,7 @@
 #
 
 REPOS=${1}
-INTERVAL=60
+INTERVAL=30
 LOG_LOCATION=${2}
 
 while true
