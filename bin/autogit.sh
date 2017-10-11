@@ -19,7 +19,9 @@ do
       echo $GIT_DIFF
       git commit -a -m "auto commit"
       echo "Complete"
-    fi
+    else
+      echo "Nothing to commit
+    fi  
   done
   sleep $INTERVAL
 done
