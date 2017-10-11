@@ -20,7 +20,7 @@ do
       git commit -a -m "auto commit"
       echo "Complete"
     else
-      echo "Nothing to commit
+      echo "Nothing to commit"
     fi  
   done
   sleep $INTERVAL
