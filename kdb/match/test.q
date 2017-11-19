@@ -1,7 +1,8 @@
+\l /home/paul/git/pgriggy/kdb/match/match.q
 generateOrder:{
 
-  tab:first `cxlOrder`modOrder`newOrder@first where raze 1 4 9>\:1?10;
-  px:first 1?10+0.01*til 100;
+  tab:first `cxlOrder`modOrder`newOrder@first where raze 1 3 9>\:1?10;
+  px:first 1?10+0.01*til 10;
   side:first "12"@first 1?2;
   if[tab in `modOrder`newOrder;
     currPx:$[side="1";exec min price from orderState where side="2";exec max price from orderState where side="1"];
@@ -23,4 +24,4 @@ generateOrder:{
 
 .z.ts:{generateOrder[]}
 
-\t 10
+\t 100

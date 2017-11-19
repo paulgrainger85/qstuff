@@ -74,7 +74,7 @@ orderState:([orderID:`u#`long$()]side:`char$();qty:`long$();price:`float$();seqN
   if[not count matches;:()];
 //sort by price, based on side
 //first update the price to be the min of price and matched price, to preserve order priority
-  matches:update matchPrice:price&x[`price]from matches;
+  matches:update matchPrice:?["2"=x`side;price|x[`price];price&x`price]from matches;
   matches:$[x[`side]="1";`matchPrice xasc matches;`matchPrice xdesc matches];
   matches
 
