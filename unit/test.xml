@@ -15,7 +15,7 @@
       </testcase>
       <testcase classname="JUnitXmlReporter.constructor" name="should default useDotNotation to true" time="0" />
       <testcase classname="pauls.test" name="should return true" time="0" />
-      <testcase classname="failed.test" name="this always fails" time="0.5" />
+      <testcase classname="failed.test" name="this always fails" time="0.5" >
           <failure message="test failure">no good</failure>
       </testcase>    
    </testsuite>
