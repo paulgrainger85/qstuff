@@ -8,7 +8,7 @@ pipeline {
         }
         stage('NextExample') {
             steps{
-                touch /tmp/pgriggy
+                echo 'Another hello' 
             }
         }
     }
