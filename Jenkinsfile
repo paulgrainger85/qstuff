@@ -5,6 +5,8 @@ pipeline {
             steps {
                 echo 'Hello World'
             }
+        }
+        stage('NextExample') {
             steps{
                 touch /tmp/pgriggy
             }
