@@ -4,7 +4,9 @@ pipeline {
         stage('Example') {
             steps {
                 echo 'Hello World'
-                touch /tmp/pgriggy.test
+            }
+            steps{
+                touch /tmp/pgriggy
             }
         }
     }
